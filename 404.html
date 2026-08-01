@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#050a0f" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Page not found | 5,000 Days</title>
+    <style>
+      body { min-height: 100svh; display: grid; place-items: center; }
+      .error-page { width: min(680px, calc(100% - 40px)); text-align: center; }
+      .error-code { margin: 0; color: #e4ad43; font: 900 clamp(6rem, 25vw, 12rem)/0.8 var(--font-display); letter-spacing: -0.09em; }
+      .error-page h1 { margin-top: 24px; font-size: clamp(2.6rem, 8vw, 5rem); letter-spacing: -0.05em; }
+      .error-page p:not(.error-code) { margin: 22px auto 30px; color: var(--muted-strong); }
+    </style>
+  </head>
+  <body>
+    <main class="error-page">
+      <p class="error-code">404</p>
+      <h1>This page missed the shift.</h1>
+      <p>The page you requested does not exist or has moved.</p>
+      <a class="button button-primary" href="./">Return to 5,000 Days</a>
+    </main>
+  </body>
+</html>

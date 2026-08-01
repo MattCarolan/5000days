@@ -1,0 +1,9 @@
+{
+  "name": "5,000 Days",
+  "short_name": "5,000 Days",
+  "description": "Cloud, AI, Culture, History and Future",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#02070b",
+  "theme_color": "#050a0f"
+}
