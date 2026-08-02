@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080c14">
+  <meta name="description" content="Discover your Personal and Company Technology Change Styles with the assessment from Chapter 7 of 5,000 Days by Matt Carolan.">
+  <title>Technology Change Styles Assessment | 5,000 Days</title>
+  <link rel="stylesheet" href="styles.css?v=6">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="5,000 Days home">
+      <span class="brand-mark">5,000</span>
+      <span class="brand-word">DAYS</span>
+    </a>
+    <div class="header-meta">
+      <span>Chapter 7</span>
+      <span class="divider" aria-hidden="true"></span>
+      <span>Are You Ready?</span>
+    </div>
+  </header>
+
+  <main id="app" class="app-shell">
+    <section id="intro-screen" class="screen intro-screen is-active" aria-labelledby="intro-title">
+      <div class="eyebrow">TECHNOLOGY CHANGE STYLES</div>
+      <h1 id="intro-title">How do you move—and what are you moving within?</h1>
+      <p class="intro-lead">
+        Technology change happens at the intersection of how people respond to uncertainty and how organizations are structurally designed to move. Choose the assessment that is useful to you right now.
+      </p>
+
+      <div class="assessment-choice-grid" aria-label="Choose an assessment">
+        <article class="assessment-choice is-featured">
+          <div class="choice-topline">
+            <span class="choice-number">01</span>
+            <span class="choice-recommended">Recommended</span>
+          </div>
+          <h2>Personal + Company</h2>
+          <p>Identify your own change style, then assess the organization you work within and see both results together.</p>
+          <ul class="choice-meta" aria-label="Assessment details">
+            <li>39 questions</li>
+            <li>About 9 minutes</li>
+          </ul>
+          <button class="button button-primary mode-button" type="button" data-mode="both">
+            Take both assessments <span aria-hidden="true">→</span>
+          </button>
+        </article>
+
+        <article class="assessment-choice">
+          <div class="choice-topline">
+            <span class="choice-number">02</span>
+          </div>
+          <h2>Personal only</h2>
+          <p>Discover the thinking pattern that tends to show up most strongly for you when technology change becomes uncertain.</p>
+          <ul class="choice-meta" aria-label="Assessment details">
+            <li>24 questions</li>
+            <li>About 5 minutes</li>
+          </ul>
+          <button class="button button-secondary mode-button" type="button" data-mode="personal">
+            Assess my style <span aria-hidden="true">→</span>
+          </button>
+        </article>
+
+        <article class="assessment-choice">
+          <div class="choice-topline">
+            <span class="choice-number">03</span>
+          </div>
+          <h2>Company only</h2>
+          <p>Identify how an organization actually behaves when technology introduces uncertainty—not how it describes itself.</p>
+          <ul class="choice-meta" aria-label="Assessment details">
+            <li>15 questions</li>
+            <li>About 4 minutes</li>
+          </ul>
+          <button class="button button-secondary mode-button" type="button" data-mode="company">
+            Assess a company <span aria-hidden="true">→</span>
+          </button>
+        </article>
+      </div>
+
+      <div id="resume-panel" class="resume-panel" hidden>
+        <div>
+          <span class="resume-kicker">Saved in this browser</span>
+          <strong id="resume-title"></strong>
+          <p id="resume-detail"></p>
+        </div>
+        <div class="resume-actions">
+          <button id="resume-button" class="button button-primary" type="button">Continue</button>
+          <button id="discard-button" class="button button-quiet" type="button">Discard</button>
+        </div>
+      </div>
+
+      <div class="intro-note">
+        <span class="note-line" aria-hidden="true"></span>
+        <p>There are no correct answers and no ideal result. Answer based on what actually happens under uncertainty—not what sounds impressive or what a strategy deck says should happen.</p>
+      </div>
+
+      <p class="privacy-note intro-privacy">Your answers stay in this browser. Nothing is submitted or stored remotely.</p>
+    </section>
+
+    <section id="quiz-screen" class="screen quiz-screen" aria-labelledby="question-title" hidden>
+      <div class="quiz-layout">
+        <aside class="quiz-sidebar" aria-label="Assessment progress">
+          <div>
+            <div id="sidebar-label" class="sidebar-label">Assessment</div>
+            <div id="sidebar-title" class="sidebar-title"></div>
+            <p id="sidebar-instruction" class="sidebar-instruction"></p>
+          </div>
+
+          <div class="progress-block">
+            <div class="progress-labels">
+              <span>Overall progress</span>
+              <span id="progress-text"></span>
+            </div>
+            <div id="progress-track" class="progress-track" role="progressbar" aria-valuemin="1" aria-valuenow="1" aria-label="Assessment progress">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div id="section-progress" class="section-progress"></div>
+          </div>
+
+          <div id="style-key" class="style-key" aria-label="Possible result styles"></div>
+        </aside>
+
+        <div class="question-panel">
+          <div class="question-topline">
+            <span id="question-number"></span>
+            <span>Choose one</span>
+          </div>
+
+          <h2 id="question-title" class="question-title"></h2>
+          <div id="answers" class="answers" role="radiogroup" aria-labelledby="question-title"></div>
+
+          <div class="quiz-controls">
+            <button id="back-button" class="button button-secondary" type="button">
+              <span aria-hidden="true">←</span> Back
+            </button>
+            <button id="next-button" class="button button-primary" type="button" disabled>
+              Next question <span aria-hidden="true">→</span>
+            </button>
+          </div>
+          <p id="keyboard-hint" class="keyboard-hint"></p>
+        </div>
+      </div>
+    </section>
+
+    <section id="transition-screen" class="screen transition-screen" aria-labelledby="transition-title" hidden>
+      <div class="transition-card">
+        <div class="transition-index">PART TWO</div>
+        <div class="eyebrow">COMPANY TECHNOLOGY CHANGE STYLES</div>
+        <h1 id="transition-title">Now turn the lens outward.</h1>
+        <p class="transition-lead">
+          The next 15 questions are not about leadership vision, stated values, or how the company wants to be seen. They are about how the organization actually behaves when technology introduces uncertainty.
+        </p>
+        <div class="transition-guidance">
+          <div>
+            <span>Answer from practice</span>
+            <p>If there is a gap between what is said and what is rewarded, answer based on what is rewarded.</p>
+          </div>
+          <div>
+            <span>Choose one organization</span>
+            <p>Use your current company, a recent employer, or an organization you are considering joining.</p>
+          </div>
+          <div>
+            <span>Look for patterns</span>
+            <p>Focus on how decisions, risk, approvals, feedback, and failure are handled most of the time.</p>
+          </div>
+        </div>
+        <div class="transition-actions">
+          <button id="transition-back-button" class="button button-secondary" type="button">
+            <span aria-hidden="true">←</span> Back
+          </button>
+          <button id="transition-continue-button" class="button button-primary" type="button">
+            Begin company assessment <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section id="result-screen" class="screen result-screen" aria-labelledby="result-page-title" hidden>
+      <div class="result-heading-row">
+        <div>
+          <div class="eyebrow">YOUR RESULTS</div>
+          <h1 id="result-page-title"></h1>
+          <p id="result-page-intro" class="result-page-intro"></p>
+        </div>
+        <div id="result-page-badge" class="result-badge" aria-hidden="true"></div>
+      </div>
+
+      <div id="result-content" class="result-content"></div>
+
+      <section id="intersection-panel" class="intersection-panel" hidden aria-labelledby="intersection-title">
+        <div class="intersection-heading">
+          <div>
+            <div class="eyebrow">PUTTING IT ALL TOGETHER</div>
+            <h2 id="intersection-title"></h2>
+          </div>
+          <span class="intersection-statement">Fit is not agreement.</span>
+        </div>
+        <p id="intersection-intro" class="intersection-intro"></p>
+        <div class="intersection-grid">
+          <article>
+            <span>How you move</span>
+            <h3 id="intersection-personal-title"></h3>
+            <p id="intersection-personal-copy"></p>
+          </article>
+          <article>
+            <span>What you move within</span>
+            <h3 id="intersection-company-title"></h3>
+            <p id="intersection-company-copy"></p>
+          </article>
+          <article>
+            <span>What to watch</span>
+            <h3>Amplification and friction</h3>
+            <p>Notice which of your instincts the system rewards, which it quietly suppresses, and whether the friction you feel is personal—or structural.</p>
+          </article>
+        </div>
+        <div class="intersection-actions-copy">
+          <strong>Use this awareness</strong>
+          <p>Adjust how you show up, frame ideas in ways that match the organization’s momentum, make more informed choices about roles and initiatives, and stop internalizing every systemic obstacle as a personal failure.</p>
+        </div>
+      </section>
+
+      <div class="result-actions">
+        <button id="share-button" class="button button-primary" type="button">Share result</button>
+        <button id="print-button" class="button button-secondary" type="button">Print result</button>
+        <button id="restart-button" class="button button-quiet" type="button">Retake assessment</button>
+      </div>
+      <p id="share-status" class="share-status" role="status" aria-live="polite"></p>
+
+      <div class="book-footer">
+        <div>
+          <span class="book-footer-kicker">FROM THE BOOK</span>
+          <strong>5,000 Days</strong>
+          <span>Cloud, AI, Culture, History and Future</span>
+        </div>
+        <a href="/">Return to 5000days.net <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 Carolan Press</span>
+    <span>Assessment by Matt Carolan</span>
+  </footer>
+
+  <script src="quiz.js?v=6"></script>
+</body>
+</html>
