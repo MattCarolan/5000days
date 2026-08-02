@@ -1,4 +1,4 @@
-# 5,000 Days — Technology Change Styles Assessment
+# 5,000 Days, Technology Change Styles Assessment
 
 A static, browser-based assessment for `5000days.net`, designed for hosting on Amazon S3 and optionally delivered through CloudFront.
 
@@ -6,9 +6,9 @@ A static, browser-based assessment for `5000days.net`, designed for hosting on A
 
 The opening screen offers three paths:
 
-1. **Personal + Company** — 39 questions total
-2. **Personal only** — 24 questions
-3. **Company only** — 15 questions
+1. **Personal + Company**, 39 questions total
+2. **Personal only**, 24 questions
+3. **Company only**, 15 questions
 
 The Personal Technology Change Styles are:
 

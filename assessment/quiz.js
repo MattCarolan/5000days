@@ -1114,7 +1114,7 @@ function createResultSection(type, result, responseCount) {
           <p>${challenge}</p>
         </div>
         <blockquote>${personal
-          ? "Treat this result as a mirror, not a verdict. These are patterns of response—not fixed traits, job roles, or measures of intelligence."
+          ? "Treat this result as a mirror, not a verdict. These are patterns of response, not fixed traits, job roles, or measures of intelligence."
           : "This result is not a measure of quality, maturity, or ambition. It describes how the organization is structurally designed to move when uncertainty appears."}</blockquote>
       </article>
       <aside class="result-sidebar" aria-label="${personal ? "Personal" : "Company"} score profile and result visual"></aside>

@@ -122,6 +122,41 @@ a:focus-visible {
 }
 .divider { width: 28px; height: 1px; background: var(--gold); }
 
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 2.5vw, 30px);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.site-nav a {
+  position: relative;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+.site-nav a::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: -8px;
+  left: 0;
+  height: 1px;
+  background: var(--gold);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 180ms ease;
+}
+.site-nav a:hover,
+.site-nav a:focus-visible {
+  color: var(--text);
+}
+.site-nav a:hover::after,
+.site-nav a:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
 .app-shell {
   min-height: calc(100vh - 164px);
   padding: 70px 0 80px;
@@ -878,8 +913,10 @@ a:focus-visible {
   .site-footer,
   .app-shell { width: min(calc(100% - 28px), var(--max-width)); }
   .site-header { min-height: 72px; }
-  .header-meta span:last-child,
-  .divider { display: none; }
+  .site-nav {
+    gap: 14px;
+    font-size: 0.74rem;
+  }
   .app-shell { min-height: calc(100vh - 142px); padding: 38px 0 56px; }
   .intro-screen h1,
   .result-screen > .result-heading-row h1,
@@ -923,6 +960,8 @@ a:focus-visible {
 }
 
 @media (max-width: 430px) {
+  .site-header { gap: 12px; }
+  .site-nav { gap: 10px; font-size: 0.69rem; }
   .result-heading-row { flex-direction: column; }
   .result-badge { align-self: flex-end; margin-top: -58px; }
   .assessment-result-heading { flex-direction: column; }
