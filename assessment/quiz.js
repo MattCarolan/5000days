@@ -380,6 +380,7 @@ const companyQuestions = [
   },
   {
     question: "The organization’s tolerance for ambiguity is…",
+    answerOrder: ["D", "A", "B", "C", "E"],
     answers: {
       A: "Low",
       B: "Moderate if measurable",
@@ -545,11 +546,14 @@ const storageKey = "five-thousand-days-technology-change-assessment-v2";
 const modeNames = {
   both: "Personal + Company",
   personal: "Personal Technology Change Style",
-  company: "Company Technology Change Style"
+  company: "Company Technology Change Style",
+  compare: "Company Comparison"
 };
 
 const screens = {
   intro: document.getElementById("intro-screen"),
+  setup: document.getElementById("company-setup-screen"),
+  companySwitch: document.getElementById("company-switch-screen"),
   quiz: document.getElementById("quiz-screen"),
   transition: document.getElementById("transition-screen"),
   result: document.getElementById("result-screen")
@@ -568,7 +572,6 @@ const progressText = document.getElementById("progress-text");
 const progressFill = document.getElementById("progress-fill");
 const progressTrack = document.getElementById("progress-track");
 const sectionProgress = document.getElementById("section-progress");
-const styleKey = document.getElementById("style-key");
 const questionNumber = document.getElementById("question-number");
 const questionTitle = document.getElementById("question-title");
 const answersElement = document.getElementById("answers");
@@ -619,7 +622,7 @@ function showScreen(name) {
 }
 
 function isValidMode(mode) {
-  return ["both", "personal", "company"].includes(mode);
+  return ["both", "personal", "company", "compare"].includes(mode);
 }
 
 function sanitiseResponses(values, validLetters, expectedLength) {
@@ -636,7 +639,8 @@ function loadSavedState() {
 
     const personalLetters = Object.keys(personalStyles);
     const companyLetters = Object.keys(companyStyles);
-    const phase = saved.phase === "company" ? "company" : "personal";
+    const phase = saved.mode === "compare" ? (saved.phase === "company2" ? "company2" : "company")
+      : saved.mode === "company" ? "company" : saved.phase === "company" ? "company" : "personal";
     const maxIndex = phase === "personal" ? personalQuestions.length - 1 : companyQuestions.length - 1;
 
     state = {
@@ -645,8 +649,13 @@ function loadSavedState() {
       index: Number.isInteger(saved.index) ? Math.min(Math.max(saved.index, 0), maxIndex) : 0,
       personalResponses: sanitiseResponses(saved.personalResponses, personalLetters, personalQuestions.length),
       companyResponses: sanitiseResponses(saved.companyResponses, companyLetters, companyQuestions.length),
+      answerOrders: saved.answerOrders && typeof saved.answerOrders === "object" && !Array.isArray(saved.answerOrders) ? saved.answerOrders : {},
+      company2Responses: sanitiseResponses(saved.company2Responses, companyLetters, companyQuestions.length),
+      companyNames: normaliseCompanyNames(saved.companyNames),
+      comparisonPurpose: ["career", "acquisition"].includes(saved.comparisonPurpose) ? saved.comparisonPurpose : "general",
       completed: Boolean(saved.completed)
     };
+    state.completed = state.completed && currentAnsweredTotal() === totalQuestionCount();
     return true;
   } catch (error) {
     return false;
@@ -675,12 +684,14 @@ function answeredCount(values) {
 }
 
 function totalQuestionCount(mode = state.mode) {
+  if (mode === "compare") return companyQuestions.length * 2;
   if (mode === "both") return personalQuestions.length + companyQuestions.length;
   if (mode === "company") return companyQuestions.length;
   return personalQuestions.length;
 }
 
 function currentOverallPosition() {
+  if (state.mode === "compare" && state.phase === "company2") return companyQuestions.length + state.index + 1;
   if (state.mode === "both" && state.phase === "company") {
     return personalQuestions.length + state.index + 1;
   }
@@ -688,6 +699,7 @@ function currentOverallPosition() {
 }
 
 function currentAnsweredTotal() {
+  if (state.mode === "compare") return answeredCount(state.companyResponses) + answeredCount(state.company2Responses);
   if (state.mode === "both") {
     return answeredCount(state.personalResponses) + answeredCount(state.companyResponses);
   }
@@ -718,10 +730,18 @@ function updateResumePanel() {
     : `${answered} of ${totalQuestionCount()} questions answered.`;
 }
 
-function startAssessment(mode) {
+function startAssessment(mode, companyOptions = null) {
+  if (mode === "company" && !companyOptions) {
+    showScreen("setup");
+    return;
+  }
   state = {
     mode,
-    phase: mode === "company" ? "company" : "personal",
+    answerOrders: {},
+    companyNames: normaliseCompanyNames(companyOptions?.names),
+    company2Responses: blankResponses(companyQuestions.length),
+    comparisonPurpose: companyOptions?.purpose || "general",
+    phase: mode === "company" || mode === "compare" ? "company" : "personal",
     index: 0,
     personalResponses: blankResponses(personalQuestions.length),
     companyResponses: blankResponses(companyQuestions.length),
@@ -742,14 +762,36 @@ function resumeAssessment() {
   showScreen("quiz");
 }
 
+// Store presentation order separately from style keys, so scoring stays unchanged.
+// Validate on use to support older saves and discard malformed stored orders.
+function getAnswerOrder(letters) {
+  state.answerOrders ||= {};
+  const key = `${state.phase}:${state.index}`;
+  const savedOrder = state.answerOrders[key];
+  if (Array.isArray(savedOrder) && savedOrder.length === letters.length
+      && new Set(savedOrder).size === letters.length
+      && savedOrder.every((letter) => letters.includes(letter))) {
+    return savedOrder;
+  }
+  const order = [...letters];
+  for (let index = order.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [order[index], order[swapIndex]] = [order[swapIndex], order[index]];
+  }
+  state.answerOrders[key] = order;
+  return order;
+}
+
 function getCurrentContext() {
   const personal = state.phase === "personal";
   return {
     type: personal ? "personal" : "company",
     questions: personal ? personalQuestions : companyQuestions,
     styles: personal ? personalStyles : companyStyles,
-    responses: personal ? state.personalResponses : state.companyResponses,
-    letters: Object.keys(personal ? personalStyles : companyStyles)
+    responses: personal ? state.personalResponses : state.phase === "company2" ? state.company2Responses : state.companyResponses,
+    letters: (!personal && companyQuestions[state.index].answerOrder)
+      ? [...companyQuestions[state.index].answerOrder]
+      : getAnswerOrder(Object.keys(personal ? personalStyles : companyStyles))
   };
 }
 
@@ -763,13 +805,13 @@ function renderSidebar(context) {
     ? "Answer as you actually behave when the path forward is unclear."
     : "Answer based on what the organization rewards and does in practice.";
 
-  styleKey.replaceChildren();
-  context.letters.forEach((letter) => {
-    const item = context.styles[letter];
-    const span = document.createElement("span");
-    span.textContent = `${letter} · ${item.shortName}`;
-    styleKey.appendChild(span);
-  });
+  if (state.mode === "company" || state.mode === "compare") {
+    sidebarLabel.textContent = state.mode === "compare"
+      ? `Company ${state.phase === "company2" ? 2 : 1} of 2` : "Company assessment";
+    sidebarTitle.textContent = activeCompanyName();
+  }
+
+
 }
 
 function renderQuestion() {
@@ -789,7 +831,11 @@ function renderQuestion() {
   progressTrack.setAttribute("aria-valuemax", String(total));
   progressTrack.setAttribute("aria-valuenow", String(overallPosition));
   sectionProgress.textContent = `${context.type === "personal" ? "Personal" : "Company"}: ${state.index + 1} of ${context.questions.length}`;
-  keyboardHint.textContent = `Keyboard: press 1–${context.letters.length} to choose, Enter to continue.`;
+  if (state.mode === "compare") {
+    questionNumber.textContent = `${activeCompanyName()} · ${displayNumber}`;
+    sectionProgress.textContent = `${activeCompanyName()}: ${state.index + 1} of ${companyQuestions.length}`;
+  }
+  keyboardHint.textContent = `Keyboard: press 1 to ${context.letters.length} to choose, Enter to continue.`;
 
   answersElement.replaceChildren();
   context.letters.forEach((letter, index) => {
@@ -801,21 +847,23 @@ function renderQuestion() {
     option.dataset.letter = letter;
     option.innerHTML = `
       <span class="answer-letter">${index + 1}</span>
-      <span class="answer-text"><strong>${letter}.</strong> ${item.answers[letter]}</span>
+      <span class="answer-text">${item.answers[letter]}</span>
     `;
     if (selected === letter) option.classList.add("is-selected");
     option.addEventListener("click", () => selectAnswer(letter));
     answersElement.appendChild(option);
   });
 
-  backButton.disabled = state.index === 0 && !(state.mode === "both" && state.phase === "company");
+  backButton.disabled = state.index === 0 && !(state.mode === "both" && state.phase === "company") && state.mode !== "compare" && state.mode !== "company";
   nextButton.disabled = !selected;
 
   const isLastInSection = state.index === context.questions.length - 1;
-  if (isLastInSection && state.mode === "both" && state.phase === "personal") {
+  if (isLastInSection && state.mode === "compare") {
+    nextButton.textContent = state.phase === "company" ? "Continue to Company 2 →" : "Compare company styles →";
+  } else if (isLastInSection && state.mode === "both" && state.phase === "personal") {
     nextButton.innerHTML = `Continue to company <span aria-hidden="true">→</span>`;
   } else if (isLastInSection) {
-    nextButton.innerHTML = `See my result <span aria-hidden="true">→</span>`;
+    nextButton.innerHTML = `See your result <span aria-hidden="true">→</span>`;
   } else {
     nextButton.innerHTML = `Next question <span aria-hidden="true">→</span>`;
   }
@@ -855,12 +903,30 @@ function moveNext() {
     return;
   }
 
+  if (state.mode === "compare" && state.phase === "company") {
+    document.getElementById("company-switch-copy").textContent = `Next, assess ${state.companyNames[1]}.`;
+    saveState();
+    showScreen("companySwitch");
+    return;
+  }
   state.completed = true;
   saveState();
   renderResults();
 }
 
 function moveBack() {
+  if (state.index === 0 && (state.mode === "company" || state.mode === "compare")) {
+    if (state.phase === "company2") {
+      state.phase = "company";
+      state.index = companyQuestions.length - 1;
+      renderQuestion();
+      showScreen("quiz");
+    } else {
+      populateCompanySetup();
+      showScreen("setup");
+    }
+    return;
+  }
   if (state.index > 0) {
     state.index -= 1;
     renderQuestion();
@@ -1099,7 +1165,7 @@ function createResultSection(type, result, responseCount) {
         <div class="eyebrow">${personal ? "PERSONAL TECHNOLOGY CHANGE STYLE" : "COMPANY TECHNOLOGY CHANGE STYLE"}</div>
         <h2>${title}</h2>
       </div>
-      <div class="section-result-badge" aria-hidden="true">${badge}</div>
+      <div class="section-result-badge${badge.length > 3 ? " is-wide-blend" : ""}" aria-hidden="true">${badge}</div>
     </div>
     <div class="result-layout">
       <article class="result-main-card">
@@ -1167,10 +1233,14 @@ function renderResults() {
 
   if (state.mode === "company" || state.mode === "both") {
     companyResult = analyseResult(state.companyResponses, companyStyles);
-    resultContent.appendChild(createResultSection("company", companyResult, companyQuestions.length));
+    const companySection = createResultSection("company", companyResult, companyQuestions.length);
+    if (state.mode === "company") addCompanyHeading(companySection, state.companyNames?.[0] || "Company 1");
+    resultContent.appendChild(companySection);
   }
 
-  if (state.mode === "both") {
+  if (state.mode === "compare") {
+    renderCompanyComparison();
+  } else if (state.mode === "both") {
     resultPageTitle.textContent = "Your technology change profile";
     resultPageIntro.textContent = "You have identified both how you tend to move when certainty disappears and how the organization around you is structurally designed to move.";
     resultPageBadge.textContent = `${personalResult.topStyles.map((item) => item.letter).join("")} · ${companyResult.topStyles.map((item) => item.letter).join("")}`;
@@ -1314,4 +1384,575 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+function normaliseCompanyNames(names) {
+  return [0, 1].map((index) => typeof names?.[index] === "string"
+    ? names[index].trim().slice(0, 80) || `Company ${index + 1}`
+    : `Company ${index + 1}`);
+}
+
+function activeCompanyName() {
+  return state.companyNames?.[state.phase === "company2" ? 1 : 0] || "Company 1";
+}
+
+function populateCompanySetup() {
+  document.querySelector(`input[name="company-count"][value="${state.mode === "compare" ? 2 : 1}"]`).checked = true;
+  document.getElementById("company-two-fields").hidden = state.mode !== "compare";
+  document.getElementById("company-one-name").value = state.companyNames?.[0] || "";
+  document.getElementById("company-two-name").value = state.companyNames?.[1] || "";
+}
+
+function addCompanyHeading(section, name) {
+  const heading = document.createElement("h2");
+  heading.className = "company-result-name";
+  heading.textContent = name;
+  section.prepend(heading);
+}
+
+// Discussion prompts derived from the existing style descriptions, not a
+// validated compatibility model. Sorted keys make either company order equivalent.
+const companyPairGuidance = {
+  AA: ["Shared stability", "Both can sustain long-term commitments and dependable delivery.", "Shared caution may delay a needed change until the opportunity has passed.", "Set a regular external-signal review and fund a small, reversible pilot outside the main roadmap."],
+  AB: ["Reliability meets efficiency", "Long-term system stewardship can support repeatable, efficient operations.", "Cost or throughput targets may underfund resilience; long planning cycles may delay useful improvements.", "Agree reliability thresholds and evaluate improvements over the same investment horizon."],
+  AC: ["Stability meets exploration", "Reliable systems can help promising experiments reach dependable scale.", "Applying long planning cycles to exploratory teams can remove the autonomy that made them valuable; experiments can also strain critical systems.", "Protect a pilot budget and team decision rights. Agree the evidence and reliability checks needed before scaling."],
+  AD: ["Stability meets oversight", "Deliberate planning and coordinated risk management can support high-consequence work.", "Two layers of review may duplicate approvals and make course corrections difficult.", "Give each decision one accountable owner and remove duplicate gates while retaining essential safeguards."],
+  AE: ["Steady delivery meets changing direction", "Sustained execution can turn market signals into durable capabilities.", "Frequent shifts may disrupt long-term commitments, while fixed plans can ignore useful new signals.", "Use a shared review cadence with explicit criteria for changing direction and protect commitments between reviews."],
+  BB: ["Shared efficiency", "Both can scale proven workflows and make performance visible.", "Shared short-term targets may crowd out experiments whose value takes time to emerge.", "Separate exploration funding and learning milestones from mature-operation efficiency targets."],
+  BC: ["Efficiency meets experimentation", "One can discover new approaches while the other makes successful approaches repeatable.", "Early experiments may look wasteful against production metrics; premature standardisation can stop learning.", "Use learning measures for pilots, then agree when evidence is strong enough to apply cost and throughput targets."],
+  BD: ["Efficiency meets coordination", "Measurable operations and clear oversight can make delivery consistent.", "Approval requirements can impede throughput, while pressure for efficiency can weaken necessary controls.", "Map required controls together and give routine low-risk decisions a clear, fast approval route."],
+  BE: ["Repeatability meets reconfiguration", "Operational discipline can turn a timely strategic shift into repeatable delivery.", "Changing priorities may repeatedly reset optimisation work and undermine agreed measures.", "Stabilise a small set of outcomes for each delivery period and make the cost of each reset visible."],
+  CC: ["Shared exploration", "Both can test ideas quickly and learn in uncertain conditions.", "Experiments may multiply without enough ownership for integration, reliability, or maintenance.", "Name owners for successful pilots and reserve capacity to integrate, document, and retire experiments."],
+  CD: ["Experimentation meets oversight", "Exploration can benefit from clear risk boundaries and coordination.", "Central approval can suppress experimentation; bypassing controls can expose both companies to avoidable risk.", "Create a sandbox with agreed limits, delegated decisions, and a time-bound escalation route for exceptions."],
+  CE: ["Exploration meets reconfiguration", "Hands-on learning can help test a response to changing market signals.", "New narratives may redirect experiments before enough evidence is collected, creating activity without learning.", "Agree a testable hypothesis and minimum learning period before changing direction."],
+  DD: ["Shared coordination", "Both can align stakeholders and manage complex dependencies.", "Overlapping oversight may obscure accountability and slow even low-risk decisions.", "Publish one decision-rights map and review approval delays with the people doing the work."],
+  DE: ["Oversight meets changing direction", "Coordination can make a new direction safer to execute.", "Frequent restructuring can outpace approvals and leave ownership or controls unclear.", "Update decision owners and risk boundaries with each strategic change, using a predictable review cadence."],
+  EE: ["Shared responsiveness", "Both can recognise external signals and adjust positioning quickly.", "Repeated changes may compound each other, leaving teams without sustained priorities.", "Protect a short list of commitments and require evidence plus a transition plan before the next reset."]
+};
+
+const companyPairPlans = {
+  "AA": {
+    "protect": "Keep both companies' system knowledge, dependable delivery, and long-term ownership. Reserve a small learning budget that does not have to wait for the next roadmap cycle.",
+    "signal": "Watch the time from a new technology proposal to a first test. Repeated deferral to the next planning cycle can leave both companies learning too late.",
+    "question": "Which reversible technology experiment can the two companies authorise this month without reopening their long-term plans?",
+    "career": "Ask each employer for an example of a small technology experiment approved between roadmap cycles. Who could authorise it, and how long did it take?"
+  },
+  "AB": {
+    "protect": "Preserve reliability engineering and institutional knowledge alongside workflow measurement and continuous improvement. Do not treat maintenance or learning time as waste simply because its return is harder to measure.",
+    "signal": "Watch for reliability work losing funding to short-term savings, or useful improvements waiting indefinitely for roadmap approval.",
+    "question": "What reliability floor and investment horizon will both companies use when deciding whether a new technology is worth adopting?",
+    "career": "Ask how each employer resolves a conflict between a reliability investment and a short-term efficiency target. What would your team be expected to prioritise?"
+  },
+  "AC": {
+    "protect": "Protect the experimental team's authority to choose tools, run small tests, and learn from failure. Preserve the steady team's operational knowledge and reliability practices, with a clear handover from pilot to production.",
+    "signal": "Look for longer pilot approval times, fewer experiments, or exploratory staff leaving after new planning and reporting rules arrive. Also watch for pilots reaching production without an operational owner.",
+    "question": "Which decisions can the exploratory team continue making independently, and what evidence will trigger a joint decision to move its pilot into dependable production?",
+    "career": "Ask the potential employer how an exploratory team gets a pilot approved and into production. Compare the team's actual autonomy and failure tolerance with your current employer."
+  },
+  "AD": {
+    "protect": "Keep long-term system stewardship and effective risk coordination. Agree one owner for each approval so combining the companies does not combine every layer of bureaucracy.",
+    "signal": "Watch for duplicate reviews, unclear decision ownership, and low-risk technology changes queuing behind major programmes.",
+    "question": "Which approval steps protect a real risk, which are duplicates, and who can authorise a low-risk technology trial without sending it through both hierarchies?",
+    "career": "Ask each employer to walk through the last low-risk technology change. How many approval steps were needed, and who could resolve a delay?"
+  },
+  "AE": {
+    "protect": "Keep the steady company's ability to finish and support commitments, and the responsive company's attention to emerging market signals. Give new signals a route into the roadmap without repeatedly resetting delivery.",
+    "signal": "Watch for unfinished migrations after each strategy change, or useful external signals being dismissed because the roadmap is already fixed.",
+    "question": "What evidence is strong enough to change the shared technology roadmap, and which delivery commitments will stay protected while that evidence is reviewed?",
+    "career": "Ask how the prospective team protects work already under way when leadership changes direction. Compare this with the stability and responsiveness you experience now."
+  },
+  "BB": {
+    "protect": "Keep measurement, repeatable delivery, and continuous improvement in both companies. Protect early-stage learning from efficiency targets designed for established operations.",
+    "signal": "Watch for pilots cancelled before they produce useful evidence because their early cost or output compares poorly with mature systems.",
+    "question": "Which learning measures and protected budget will the companies use for an unproven technology before applying production efficiency targets?",
+    "career": "Ask both employers how they fund technology experiments that cannot yet demonstrate a return. What measures determine whether your work is allowed to continue?"
+  },
+  "BC": {
+    "protect": "Keep hands-on experimentation and permission to test uncertain ideas, while preserving the ability to measure, streamline, and scale proven work. Avoid forcing exploratory work into production targets too early.",
+    "signal": "Watch for fewer experiments after cost targets are harmonised, or promising pilots being scaled before integration and support costs are understood.",
+    "question": "Who decides when a pilot has learned enough to become a repeatable service, and how will its funding and measures change at that point?",
+    "career": "Ask the potential employer when an experiment must show a financial return and how it becomes a supported service. Compare that transition with your current company."
+  },
+  "BD": {
+    "protect": "Keep effective operating measures and the controls that address meaningful risk. Let teams improve the process without treating every local change as an exception requiring central approval.",
+    "signal": "Watch for teams bypassing controls to hit targets, or approval queues erasing the efficiency gains a new technology was meant to produce.",
+    "question": "What pre-approved route can both companies offer for routine technology improvements, and which risks genuinely require escalation?",
+    "career": "Ask how the team handles pressure to deliver quickly when an approval is delayed. Can it improve the process, and where are the non-negotiable boundaries?"
+  },
+  "BE": {
+    "protect": "Keep operational discipline and measurable improvement, together with the ability to recognise when the market requires a different approach. Make the cost of switching direction visible before resetting teams.",
+    "signal": "Watch for metrics and priorities changing before an adoption effort has time to produce evidence, leaving teams repeatedly starting over.",
+    "question": "Which technology outcomes will stay fixed for one delivery period, and who must justify the cost of changing them before that period ends?",
+    "career": "Ask how often the team's success measures change and what happens to work in progress. Compare whether each employer gives improvements enough time to pay off."
+  },
+  "CC": {
+    "protect": "Preserve both companies' freedom to test ideas, share failures, and challenge assumptions. Assign ownership for maintenance and integration so experimentation remains sustainable.",
+    "signal": "Watch for growing numbers of unsupported pilots, duplicated tooling, recurring incidents, or innovators spending all their time repairing earlier experiments.",
+    "question": "Which team will own a successful joint pilot after launch, and what capacity is reserved for integration, maintenance, and retiring unsuccessful tests?",
+    "career": "Ask each employer what happens after a pilot succeeds. Who maintains it, and is time protected for both exploration and the less visible work of making it dependable?"
+  },
+  "CD": {
+    "protect": "Protect rapid experimentation and candid reporting of failed tests, alongside expertise in security, safety, and coordination. Establish an agreed sandbox with clear limits instead of requiring every experiment to follow production approval rules.",
+    "signal": "Watch for experimentation moving underground, safe failures being punished, long waits for pilot approval, or controls being bypassed because the approved route is unusable.",
+    "question": "Which experiments can the exploratory team run without prior approval, what boundaries must it respect, and how quickly must the oversight team decide on exceptions?",
+    "career": "Ask the potential employer for a recent failed experiment and how leaders responded. Then ask which technology tests the team can approve itself and which need central permission."
+  },
+  "CE": {
+    "protect": "Keep evidence from hands-on tests and awareness of changing external signals. Give experiments enough time to answer a question before a new narrative replaces their purpose.",
+    "signal": "Watch for abandoned pilots with no recorded learning, or teams presenting activity as innovation while priorities change too quickly for results.",
+    "question": "What hypothesis and minimum learning period will both companies agree before starting a pilot, and what evidence would justify stopping or redirecting it early?",
+    "career": "Ask how the team decides whether to finish, stop, or redirect an experiment when strategy changes. Compare whether each employer values evidence or mainly visible activity."
+  },
+  "DD": {
+    "protect": "Keep clear accountability, risk expertise, and constructive challenge from both companies. Consolidate overlapping controls instead of asking teams to satisfy two approval systems.",
+    "signal": "Watch for decisions circulating between committees, inconsistent risk instructions, and employees becoming reluctant to raise issues because doing so only creates delays.",
+    "question": "Who has final authority for each kind of technology decision, and which duplicate review can be removed without weakening the protection it provides?",
+    "career": "Ask each employer who can make a final technology decision when reviewers disagree. What happens when someone challenges an existing control or proposes a faster approach?"
+  },
+  "DE": {
+    "protect": "Keep visibility of risks and dependencies, and the ability to respond to meaningful external change. Update decision rights with each strategic shift so teams do not lose their route to approval.",
+    "signal": "Watch for technology projects stalled by unclear ownership after reorganisations, or new strategic commitments announced before anyone has assessed their operational implications.",
+    "question": "When strategy or structure changes, who will update the technology decision owners, risk boundaries, and active commitments before teams are expected to execute?",
+    "career": "Ask how the team keeps decisions moving after a reorganisation. Compare how clearly each employer reconnects changing priorities with budgets, ownership, and approvals."
+  },
+  "EE": {
+    "protect": "Keep both companies' awareness of customers, competitors, and emerging technology. Protect the people, learning records, and delivery commitments needed to turn a new direction into a working capability.",
+    "signal": "Watch for repeated rebranding of unfinished initiatives, loss of people carrying key knowledge, or teams becoming cynical because no direction lasts long enough to deliver.",
+    "question": "Which technology commitments will both companies protect through the next strategy review, and what evidence will be required before another reset?",
+    "career": "Ask the prospective employer which technology commitments survived its last strategic change. Compare how each company protects continuity, accumulated learning, and the people doing the work."
+  }
+};
+
+function comparisonPairs(first, second) {
+  const keys = new Set();
+  first.topStyles.forEach((left) => second.topStyles.forEach((right) => keys.add([left.letter, right.letter].sort().join(""))));
+  return [...keys].map((key) => ({ key, guidance: companyPairGuidance[key] }));
+}
+
+
+function comparisonDiscussion(first, second, purpose) {
+  return comparisonPairs(first, second).map(({ key }) => {
+    const plan = companyPairPlans[key];
+    return {
+      key,
+      label: key[0] === key[1] ? `Shared ${companyStyles[key[0]].shortName} pattern`
+        : `${companyStyles[key[0]].shortName} + ${companyStyles[key[1]].shortName}`,
+      question: purpose === "career" ? plan.career
+        : purpose === "acquisition" ? plan.question + " Agree this before combining technology teams or standardising their tools."
+        : plan.question
+    };
+  });
+}
+
+function appendComparisonText(parent, tag, text, className = "") {
+  const element = document.createElement(tag);
+  element.textContent = text;
+  if (className) element.className = className;
+  parent.appendChild(element);
+  return element;
+}
+
+function createComparisonGuidance(results, names, purpose) {
+  const guidance = document.createElement("section");
+  guidance.className = "company-comparison company-working-guidance";
+
+  const viewCopy = {
+    general: {
+      title: "How these companies could work together",
+      intro: "Explore how the two companies can adopt technology together: where their strengths complement each other, where delivery could stall, and which working agreements to test."
+    },
+    career: {
+      title: "Compare your current company with a potential employer",
+      intro: "Use the two profiles to investigate the working environment you may be moving into. Focus on everyday decisions, room to experiment, and what you want to retain from your current role. This is not a personal-fit score."
+    },
+    acquisition: {
+      title: "Considering an acquisition or merger",
+      intro: "Explore what integration could put at risk, which strengths and working practices to preserve from each company, and how to detect lost innovation before it becomes normal."
+    }
+  };
+  appendComparisonText(guidance, "h2", viewCopy[purpose].title);
+  appendComparisonText(guidance, "p", viewCopy[purpose].intro);
+  if (purpose !== "career") {
+    comparisonPairs(...results).forEach(({ key, guidance: items }) => {
+      const article = document.createElement("article");
+      article.className = "company-pair";
+      appendComparisonText(article, "h3", items[0]);
+      appendComparisonText(article, "p", key[0] === key[1] ? `Shared ${companyStyles[key[0]].shortName} pattern` : `${companyStyles[key[0]].shortName} + ${companyStyles[key[1]].shortName}`, "eyebrow");
+      const sections = purpose === "acquisition"
+        ? [["What to preserve from both companies", companyPairPlans[key].protect], ["Where integration could suppress progress", items[2]], ["Early signs of lost innovation", companyPairPlans[key].signal]]
+        : [["How they could adopt technology together", items[1]], ["Where adoption could stall", items[2]], ["A working agreement to try", items[3]]];
+      sections.forEach(([label, copy]) => {
+        appendComparisonText(article, "h4", label);
+        appendComparisonText(article, "p", copy);
+      });
+      guidance.appendChild(article);
+    });
+  }
+
+  const discussion = document.createElement("section");
+  discussion.className = "company-discussion";
+  appendComparisonText(discussion, "h3", purpose === "career" ? "Questions for your job comparison" : purpose === "acquisition" ? "Questions before combining the companies" : "Questions to discuss together");
+  appendComparisonText(discussion, "p", `Use these questions to compare ${names[0]} with ${names[1]}. Each question below comes from a style pairing in your results.`);
+  if (results.some((result) => result.isTie)) {
+    appendComparisonText(discussion, "p", "Your results include tied styles, so several pairings are relevant. Start with the patterns you recognise in the teams that will actually work together.");
+  }
+  const list = document.createElement("ul");
+  list.className = "company-discussion-list";
+  comparisonDiscussion(...results, purpose).forEach(({ label, question }) => {
+    const item = document.createElement("li");
+    appendComparisonText(item, "h4", label);
+    appendComparisonText(item, "p", question);
+    list.appendChild(item);
+  });
+  discussion.appendChild(list);
+  guidance.appendChild(discussion);
+
+  const actionPlan = document.createElement("section");
+  actionPlan.className = "company-action-plan";
+  appendComparisonText(actionPlan, "h3", purpose === "career" ? "Turn the answers into a better-informed decision" : purpose === "acquisition" ? "Protect innovation during integration" : "Try a small collaboration first");
+  const steps = purpose === "career" ? [
+    ["Check the actual team", "Ask the hiring manager and a future colleague for recent examples of technology decisions, failed experiments, and shifting priorities. Check whether the team operates like the wider company."],
+    ["Name what you want to keep", "Identify the autonomy, learning opportunities, support, and ways of working you value in your current role. Ask how those would work in the new team."],
+    ["Separate evidence from impressions", "Record examples and unanswered questions before deciding. This compares company environments; it does not assess your personal fit or establish that one employer is better."]
+  ] : purpose === "acquisition" ? [
+    ["Protect what makes each company valuable", "Ask people in both companies which practices help them learn and deliver. Record the tools, relationships, decision rights, and specialist knowledge to preserve. Give teams a safe route to challenge proposed changes."],
+    ["Test one technology together", "Choose a small, reversible pilot with a shared goal, an accountable owner from each company, and agreed risk boundaries. Protect time and funding for learning, then decide together what evidence is needed to scale, adapt, or stop."],
+    ["Watch for lost momentum", "Establish a baseline before changing ways of working. Review pilot approval time, learning completed, delivery reliability, staff feedback, and loss of key people at 30, 60, and 90 days. Name someone who can remove a new bottleneck or reverse a harmful rule."]
+  ] : [
+    ["Agree one shared outcome", "Choose a technology problem both companies want to solve. Agree who makes decisions, which risks need joint review, and what each team can decide independently."],
+    ["Run a bounded pilot", "Give a small joint team time and resources to test an approach. Define what evidence would support scaling, changing direction, or stopping."],
+    ["Review how the work felt", "Compare delivery and learning with the effort needed to coordinate. Ask which practices helped and which created friction before expanding the partnership."]
+  ];
+  if (purpose === "acquisition") {
+    appendComparisonText(actionPlan, "p", "Treat the culture and innovation practices you want to retain as explicit integration commitments. Decide what must be shared and what can remain independent before imposing common tools, targets, or approvals. Neither company's way of working should become the default solely because of ownership.");
+  }
+  const stepGrid = document.createElement("div");
+  stepGrid.className = "company-action-grid";
+  steps.forEach(([title, copy], index) => {
+    const step = document.createElement("article");
+    appendComparisonText(step, "span", String(index + 1).padStart(2, "0"), "eyebrow");
+    appendComparisonText(step, "h4", title);
+    appendComparisonText(step, "p", copy);
+    stepGrid.appendChild(step);
+  });
+  actionPlan.appendChild(stepGrid);
+  guidance.appendChild(actionPlan);
+  return guidance;
+}
+
+
+const comparisonPerspectives = [
+  { id: "general", label: "Understand how the companies could work together", shortLabel: "Working together" },
+  { id: "career", label: "Compare your current company with a potential employer", shortLabel: "A potential job move" },
+  { id: "acquisition", label: "Consider an acquisition or merger", shortLabel: "An acquisition or merger" }
+];
+
+function createComparisonExplorer(results, names) {
+  const section = document.createElement("section");
+  section.className = "comparison-explorer";
+  const controls = document.createElement("div");
+  controls.className = "comparison-perspectives";
+  appendComparisonText(controls, "p", "EXPLORE YOUR RESULTS", "eyebrow");
+  const title = appendComparisonText(controls, "h2", "What would you like to explore?");
+  title.id = "comparison-perspective-title";
+  appendComparisonText(controls, "p", "Choose a perspective to reveal its guidance. Only one view is shown at a time; your company profiles and scores stay the same.");
+  const choices = document.createElement("div");
+  choices.className = "comparison-perspective-choices";
+  choices.setAttribute("role", "group");
+  choices.setAttribute("aria-labelledby", title.id);
+  const content = document.createElement("div");
+  content.id = "comparison-perspective-content";
+  const status = document.createElement("p");
+  status.className = "comparison-perspective-status";
+  status.setAttribute("role", "status");
+  status.setAttribute("aria-live", "polite");
+  const buttons = [];
+  const panels = [];
+  let currentPurpose = comparisonPerspectives.some((item) => item.id === state.comparisonPurpose) ? state.comparisonPurpose : "general";
+  function update(purpose, persist = false) {
+    currentPurpose = purpose;
+    const selected = comparisonPerspectives.find((item) => item.id === purpose);
+    if (persist) {
+      state.comparisonPurpose = purpose;
+      saveState();
+    }
+    buttons.forEach((button) => {
+      const active = button.dataset.perspective === purpose;
+      button.setAttribute("aria-pressed", String(active));
+      button.setAttribute("aria-expanded", String(active));
+    });
+    panels.forEach((panel) => {
+      const active = panel.dataset.view === purpose;
+      panel.hidden = !active;
+      // Keep inactive views empty as well as hidden, so only selected guidance
+      // contributes to page length, search results, accessibility, and printing.
+      panel.replaceChildren(...(active ? [createComparisonGuidance(results, names, purpose)] : []));
+    });
+    status.textContent = "Exploring: " + selected.shortLabel;
+  }
+  comparisonPerspectives.forEach((item, index) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "comparison-perspective-button";
+    button.dataset.perspective = item.id;
+    button.id = "comparison-perspective-" + item.id;
+    const panel = document.createElement("section");
+    panel.id = "comparison-view-" + item.id;
+    panel.className = "comparison-view";
+    panel.dataset.view = item.id;
+    panel.hidden = true;
+    panel.setAttribute("role", "region");
+    panel.setAttribute("aria-labelledby", button.id);
+    button.setAttribute("aria-controls", panel.id);
+    content.appendChild(panel);
+    panels.push(panel);
+    const number = appendComparisonText(button, "span", String(index + 1).padStart(2, "0"), "eyebrow");
+    number.setAttribute("aria-hidden", "true");
+    appendComparisonText(button, "span", item.label);
+    button.addEventListener("click", () => {
+      if (currentPurpose !== item.id) update(item.id, true);
+    });
+    choices.appendChild(button);
+    buttons.push(button);
+  });
+  controls.appendChild(choices);
+  controls.appendChild(status);
+  section.appendChild(controls);
+  section.appendChild(content);
+  update(currentPurpose);
+  return section;
+}
+
+function renderCompanyComparison() {
+  const names = state.companyNames;
+  const results = [
+    analyseResult(state.companyResponses, companyStyles),
+    analyseResult(state.company2Responses, companyStyles)
+  ];
+  resultPageTitle.textContent = "Two companies. Two ways of adapting.";
+  resultPageIntro.textContent = `${names[0]} and ${names[1]}: compare their patterns, then explore what they may need from each other.`;
+  resultPageBadge.textContent = "2";
+
+  const overview = document.createElement("section");
+  overview.className = "company-comparison";
+  appendComparisonText(overview, "h2", "Company styles at a glance");
+  const cards = document.createElement("div");
+  cards.className = "company-summary-grid";
+  results.forEach((result, index) => {
+    const card = document.createElement("article");
+    card.className = "company-summary-card";
+    card.dataset.company = String(index + 1);
+    card.appendChild(createCompanyVisual(result));
+    appendComparisonText(card, "p", `Company ${index + 1}`, "eyebrow");
+    appendComparisonText(card, "h3", names[index]);
+    appendComparisonText(card, "p", result.displayName, "comparison-style");
+    appendComparisonText(card, "p", result.isTie ? "Several styles share the highest score. Consider all of them in the comparison below." : result.primary.focus);
+    cards.appendChild(card);
+  });
+  overview.appendChild(cards);
+
+  const chart = document.createElement("figure");
+  chart.className = "company-style-chart";
+  appendComparisonText(chart, "figcaption", "Different strengths. A shared picture.", "comparison-chart-title");
+  appendComparisonText(chart, "p", "Each bar shows how often a style appeared in the 15 answers. Taller bars indicate a stronger pattern in this assessment. Select a style name below the chart to explore it.", "comparison-chart-description");
+  const legend = document.createElement("div");
+  legend.className = "comparison-chart-legend";
+  names.forEach((name, index) => {
+    const item = appendComparisonText(legend, "span", name);
+    item.dataset.company = String(index + 1);
+  });
+  chart.appendChild(legend);
+  const plot = document.createElement("div");
+  plot.className = "comparison-chart-plot";
+  const axis = document.createElement("div");
+  axis.className = "comparison-chart-axis";
+  axis.setAttribute("aria-hidden", "true");
+  [15, 10, 5, 0].forEach((value) => appendComparisonText(axis, "span", String(value)));
+  plot.appendChild(axis);
+  Object.keys(companyStyles).forEach((letter) => {
+    const group = document.createElement("div");
+    group.className = "comparison-chart-group";
+    const bars = document.createElement("div");
+    bars.className = "comparison-chart-bars";
+    results.forEach((result, index) => {
+      const score = result.ranking.find((style) => style.letter === letter).score;
+      const bar = document.createElement("div");
+      bar.className = "comparison-chart-bar";
+      bar.dataset.company = String(index + 1);
+      bar.style.height = `${(score / companyQuestions.length) * 100}%`;
+      bar.setAttribute("role", "img");
+      bar.setAttribute("aria-label", `${names[index]}, ${companyStyles[letter].shortName}: ${score} of ${companyQuestions.length} answers`);
+      bar.title = `${names[index]}: ${score} of ${companyQuestions.length}`;
+      const value = appendComparisonText(bar, "span", String(score), "comparison-chart-value");
+      value.setAttribute("aria-hidden", "true");
+      bars.appendChild(bar);
+    });
+    group.appendChild(bars);
+
+    const styleButton = appendComparisonText(group, "button", companyStyles[letter].shortName, "comparison-chart-label");
+    styleButton.type = "button";
+    styleButton.setAttribute("aria-haspopup", "dialog");
+    styleButton.setAttribute("aria-controls", "company-style-dialog");
+    styleButton.addEventListener("click", () => openCompanyStyleSummary(letter));
+
+    plot.appendChild(group);
+  });
+  chart.appendChild(plot);
+  overview.appendChild(chart);
+  appendComparisonText(overview, "p", "These are perceptions of how each company behaves, not a compatibility score or a prediction of success. Company age, size, and ownership do not determine its style. Check the patterns with people in each company, especially when your knowledge comes from interviews.", "comparison-note");
+  resultContent.appendChild(overview);
+
+  resultContent.appendChild(createComparisonExplorer(results, names));
+
+  results.forEach((result, index) => {
+    const section = createResultSection("company", result, companyQuestions.length);
+    addCompanyHeading(section, `Company ${index + 1}: ${names[index]}`);
+    resultContent.appendChild(section);
+  });
+  latestResultText = `${names[0]}'s Technology Change Style is ${results[0].displayName}. ${names[1]}'s Technology Change Style is ${results[1].displayName}. This comparison highlights patterns to discuss, not a compatibility score.`;
+  latestShareTitle = "Company Technology Change Style Comparison";
+}
+
+document.querySelectorAll('input[name="company-count"]').forEach((input) => {
+  input.addEventListener("change", () => {
+    document.getElementById("company-two-fields").hidden = input.value !== "2";
+  });
+});
+document.getElementById("company-setup-back").addEventListener("click", () => {
+  updateResumePanel();
+  showScreen("intro");
+});
+document.getElementById("company-setup-form").addEventListener("submit", (event) => {
+  event.preventDefault();
+  const mode = document.querySelector('input[name="company-count"]:checked').value === "2" ? "compare" : "company";
+  const options = {
+    names: [document.getElementById("company-one-name").value, document.getElementById("company-two-name").value]
+  };
+  if ((state.mode === "company" || state.mode === "compare") && !state.completed) {
+    state.mode = mode;
+    state.phase = "company";
+    state.index = 0;
+    state.companyNames = normaliseCompanyNames(options.names);
+    state.company2Responses ||= blankResponses(companyQuestions.length);
+    renderQuestion();
+    showScreen("quiz");
+  } else {
+    startAssessment(mode, options);
+  }
+});
+document.getElementById("company-switch-back").addEventListener("click", () => {
+  state.phase = "company";
+  state.index = companyQuestions.length - 1;
+  renderQuestion();
+  showScreen("quiz");
+});
+document.getElementById("company-switch-continue").addEventListener("click", () => {
+  state.phase = "company2";
+  const unanswered = state.company2Responses.findIndex((answer) => !answer);
+  state.index = unanswered === -1 ? companyQuestions.length - 1 : unanswered;
+  renderQuestion();
+  showScreen("quiz");
+});
+
 updateResumePanel();
+
+
+
+function renderStyleLibrary() {
+  [["company", companyStyles], ["personal", personalStyles]].forEach(([type, styles]) => {
+    const grid = document.getElementById(`style-library-${type}`);
+    grid.replaceChildren();
+    Object.values(styles).forEach((style) => {
+      const card = document.createElement("article");
+      card.className = "style-library-card";
+      const img = document.createElement("img");
+      img.src = style.image;
+      img.alt = style.imageAlt;
+      img.width = type === "company" ? 960 : 760;
+      img.height = type === "company" ? 760 : 700;
+      img.decoding = "async";
+      card.appendChild(img);
+      appendComparisonText(card, "h3", style.name);
+      appendComparisonText(card, "p", style.focus, "style-library-focus");
+      appendComparisonText(card, "p", style.description);
+      [["What this style brings", style.strength], ["Where friction can appear", style.challenge]].forEach(([label, copy]) => {
+        appendComparisonText(card, "h4", label);
+        appendComparisonText(card, "p", copy);
+      });
+      grid.appendChild(card);
+    });
+  });
+}
+
+function selectStyleLibraryGroup(type) {
+  ["company", "personal"].forEach((group) => {
+    document.getElementById(`style-library-${group}`).hidden = group !== type;
+    document.getElementById(`style-library-${group}-button`).setAttribute("aria-pressed", String(group === type));
+  });
+}
+
+const styleLibraryDialog = document.getElementById("style-library-dialog");
+let styleLibraryReady = false;
+document.getElementById("explore-styles-button").addEventListener("click", () => {
+  if (!styleLibraryReady) {
+    renderStyleLibrary();
+    styleLibraryReady = true;
+  }
+  selectStyleLibraryGroup(state.mode === "personal" || state.mode === "both" ? "personal" : "company");
+  styleLibraryDialog.showModal();
+  styleLibraryDialog.scrollTop = 0;
+  document.body.classList.add("style-library-open");
+});
+document.getElementById("style-library-close").addEventListener("click", () => styleLibraryDialog.close());
+styleLibraryDialog.addEventListener("close", () => document.body.classList.remove("style-library-open"));
+["company", "personal"].forEach((group) => {
+  document.getElementById(`style-library-${group}-button`).addEventListener("click", () => selectStyleLibraryGroup(group));
+});
+
+function openCompanyStyleSummary(letter) {
+  const style = companyStyles[letter];
+  if (!style) return;
+  const content = document.getElementById("company-style-summary");
+  content.replaceChildren();
+  document.getElementById("company-style-title").textContent = style.name;
+  const image = document.createElement("img");
+  image.src = style.image;
+  image.alt = style.imageAlt;
+  image.width = 960;
+  image.height = 760;
+  image.decoding = "async";
+  content.appendChild(image);
+  const copy = document.createElement("div");
+  appendComparisonText(copy, "p", style.focus, "style-library-focus");
+  appendComparisonText(copy, "p", style.description);
+  appendComparisonText(copy, "h3", "What this style brings");
+  appendComparisonText(copy, "p", style.strength);
+  appendComparisonText(copy, "h3", "Where friction can appear");
+  appendComparisonText(copy, "p", style.challenge);
+  content.appendChild(copy);
+  const dialog = document.getElementById("company-style-dialog");
+  dialog.showModal();
+  dialog.scrollTop = 0;
+  document.body.classList.add("style-library-open");
+}
+
+const companyStyleDialog = document.getElementById("company-style-dialog");
+document.getElementById("company-style-close").addEventListener("click", () => companyStyleDialog.close());
+companyStyleDialog.addEventListener("close", () => document.body.classList.remove("style-library-open"));
+
+function keepDialogTabFocus(event) {
+  if (event.key !== "Tab") return;
+  const dialog = event.currentTarget;
+  const focusable = [...dialog.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter((element) => element.getClientRects().length > 0);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+styleLibraryDialog.addEventListener("keydown", keepDialogTabFocus);
+companyStyleDialog.addEventListener("keydown", keepDialogTabFocus);

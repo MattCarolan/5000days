@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#080c14">
   <meta name="description" content="Discover your Personal and Company Technology Change Styles with the assessment from Chapter 7 of 5,000 Days by Matt Carolan.">
   <title>Technology Change Styles Assessment | 5,000 Days</title>
-  <link rel="stylesheet" href="styles.css?v=6">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
   <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -19,8 +19,8 @@
       <span class="brand-word">DAYS</span>
     </a>
     <nav class="site-nav" aria-label="Primary navigation">
-      <a href="/#infographics">Infographics</a>
-      <a href="/#about">About the book</a>
+      <a href="https://5000days.net/#infographics">Infographics</a>
+      <a href="https://5000days.net/#about">The Book Behind the Assessment</a>
     </nav>
   </header>
 
@@ -60,7 +60,7 @@
             <li>About 5 minutes</li>
           </ul>
           <button class="button button-secondary mode-button" type="button" data-mode="personal">
-            Assess my style <span aria-hidden="true">→</span>
+            Assess your style <span aria-hidden="true">→</span>
           </button>
         </article>
 
@@ -69,10 +69,10 @@
             <span class="choice-number">03</span>
           </div>
           <h2>Company only</h2>
-          <p>Identify how an organization actually behaves when technology introduces uncertainty, not how it describes itself.</p>
+          <p>Identify how an organization actually behaves when technology introduces uncertainty, or compare two companies and explore how their styles could work together.</p>
           <ul class="choice-meta" aria-label="Assessment details">
-            <li>15 questions</li>
-            <li>About 4 minutes</li>
+            <li>15 questions per company</li>
+            <li>About 4 minutes per company</li>
           </ul>
           <button class="button button-secondary mode-button" type="button" data-mode="company">
             Assess a company <span aria-hidden="true">→</span>
@@ -100,6 +100,46 @@
       <p class="privacy-note intro-privacy">Your answers stay in this browser. Nothing is submitted or stored remotely.</p>
     </section>
 
+    <section id="company-setup-screen" class="screen" aria-labelledby="company-setup-title" hidden>
+      <div class="transition-card">
+        <div class="eyebrow">COMPANY TECHNOLOGY CHANGE STYLES</div>
+        <h1 id="company-setup-title">One company or two?</h1>
+        <p class="transition-lead">Understand a company you own, work for, or may join. Or compare two companies to explore how their ways of adapting could work together.</p>
+        <form id="company-setup-form">
+          <fieldset class="company-count">
+            <legend>Choose your assessment</legend>
+            <label><input type="radio" name="company-count" value="1" checked> <strong>One company</strong><span>15 questions · About 4 minutes</span></label>
+            <label><input type="radio" name="company-count" value="2"> <strong>Compare two companies</strong><span>30 questions · About 8 minutes</span></label>
+          </fieldset>
+          <div class="company-fields">
+            <label>Company 1 name <span>(optional)</span><input id="company-one-name" maxlength="80" autocomplete="off" placeholder="Company 1"></label>
+            <div id="company-two-fields" hidden>
+              <label>Company 2 name <span>(optional)</span><input id="company-two-name" maxlength="80" autocomplete="off" placeholder="Company 2"></label>
+              <p>Complete the same 15 questions for each company. Once you have both profiles, explore working together, a possible job move, or an acquisition or merger. You can explore all three.</p>
+            </div>
+          </div>
+          <p class="privacy-note">Answer from observed behaviour. If you know a company mainly through interviews, treat the result as a working hypothesis to check with examples. Names and answers stay in this browser.</p>
+          <div class="transition-actions">
+            <button id="company-setup-back" class="button button-secondary" type="button">Back</button>
+            <button class="button button-primary" type="submit">Begin company assessment →</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="company-switch-screen" class="screen" aria-labelledby="company-switch-title" hidden>
+      <div class="transition-card">
+        <div class="eyebrow">COMPANY TWO</div>
+        <h1 id="company-switch-title">Now consider the second company.</h1>
+        <p id="company-switch-copy" class="transition-lead"></p>
+        <p>Your first company's answers are saved. Answer the same questions based on the second company's actual behaviour, without trying to make the results match or differ.</p>
+        <div class="transition-actions">
+          <button id="company-switch-back" class="button button-secondary" type="button">Back to Company 1</button>
+          <button id="company-switch-continue" class="button button-primary" type="button">Begin Company 2 →</button>
+        </div>
+      </div>
+    </section>
+
     <section id="quiz-screen" class="screen quiz-screen" aria-labelledby="question-title" hidden>
       <div class="quiz-layout">
         <aside class="quiz-sidebar" aria-label="Assessment progress">
@@ -120,7 +160,6 @@
             <div id="section-progress" class="section-progress"></div>
           </div>
 
-          <div id="style-key" class="style-key" aria-label="Possible result styles"></div>
         </aside>
 
         <div class="question-panel">
@@ -225,6 +264,7 @@
       <div class="result-actions">
         <button id="share-button" class="button button-primary" type="button">Share result</button>
         <button id="print-button" class="button button-secondary" type="button">Print result</button>
+        <button id="explore-styles-button" class="button button-secondary" type="button" aria-haspopup="dialog" aria-controls="style-library-dialog">Explore all styles</button>
         <button id="restart-button" class="button button-quiet" type="button">Retake assessment</button>
       </div>
       <p id="share-status" class="share-status" role="status" aria-live="polite"></p>
@@ -240,11 +280,42 @@
     </section>
   </main>
 
+
+  <dialog id="style-library-dialog" class="style-library-dialog" aria-labelledby="style-library-title">
+    <div class="style-library-header">
+      <div>
+        <div class="eyebrow">THE FULL PICTURE</div>
+        <h2 id="style-library-title">Explore all adapt styles</h2>
+      </div>
+      <button id="style-library-close" class="button button-secondary" type="button" autofocus>Back to your results</button>
+    </div>
+    <p class="style-library-intro">Every style brings something useful and has places where it can get in the way. Explore the patterns behind your result and the others you may work alongside.</p>
+    <div class="style-library-switch" role="group" aria-label="Choose a style collection">
+      <button id="style-library-company-button" class="button button-secondary" type="button" aria-pressed="true" aria-controls="style-library-company">Company styles (5)</button>
+      <button id="style-library-personal-button" class="button button-secondary" type="button" aria-pressed="false" aria-controls="style-library-personal">Personal styles (6)</button>
+    </div>
+    <p class="style-library-note">These are patterns, not rankings. People can show blends, and teams within the same company can operate differently.</p>
+    <section id="style-library-company" class="style-library-grid" aria-label="All company styles"></section>
+    <section id="style-library-personal" class="style-library-grid" aria-label="All personal styles" hidden></section>
+  </dialog>
+
+
+  <dialog id="company-style-dialog" class="style-library-dialog company-style-dialog" aria-labelledby="company-style-title">
+    <div class="style-library-header">
+      <div>
+        <div class="eyebrow">COMPANY ADAPT STYLE</div>
+        <h2 id="company-style-title"></h2>
+      </div>
+      <button id="company-style-close" class="button button-secondary" type="button" autofocus>Back to comparison</button>
+    </div>
+    <div id="company-style-summary"></div>
+  </dialog>
+
   <footer class="site-footer">
     <span>© 2026 Carolan Press</span>
     <span>Assessment by Matt Carolan</span>
   </footer>
 
-  <script src="quiz.js?v=6"></script>
+  <script src="quiz.js?v=12"></script>
 </body>
 </html>
