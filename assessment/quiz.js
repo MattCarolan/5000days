@@ -425,7 +425,7 @@ const personalStyles = {
   A: {
     name: "The Architect",
     shortName: "Architect",
-    image: "images/the-architect.png?v=2",
+    image: "images/the-architect.webp?v=1",
     imageAlt: "Illustration representing The Architect",
     focus: "You focus on structure.",
     description: "When faced with technological change, you want to understand how the pieces fit together before committing. You think in systems, boundaries, and long-term consequences. Your instinct is to design something coherent rather than react to surface-level features.",
@@ -435,7 +435,7 @@ const personalStyles = {
   B: {
     name: "The Optimizer",
     shortName: "Optimizer",
-    image: "images/the-optimizer.png?v=2",
+    image: "images/the-optimizer.webp?v=1",
     imageAlt: "Illustration representing The Optimizer",
     focus: "You focus on efficiency.",
     description: "You are drawn to measurable improvement. When technology changes, you look for ways to reduce waste, improve throughput, lower cost, or increase reliability. You want evidence that something works better, not just that it is new.",
@@ -445,7 +445,7 @@ const personalStyles = {
   C: {
     name: "The Firefighter",
     shortName: "Firefighter",
-    image: "images/the-firefighter.png?v=2",
+    image: "images/the-firefighter.webp?v=1",
     imageAlt: "Illustration representing The Firefighter",
     focus: "You focus on stability.",
     description: "During change, you instinctively look for failure modes and ways to contain damage. You are calm in crises and decisive under pressure.",
@@ -455,7 +455,7 @@ const personalStyles = {
   D: {
     name: "The Translator",
     shortName: "Translator",
-    image: "images/the-translator.png?v=2",
+    image: "images/the-translator.webp?v=1",
     imageAlt: "Illustration representing The Translator",
     focus: "You focus on alignment.",
     description: "You notice how technology change affects people differently. Your instinct is to bridge gaps between technical and non-technical groups, leadership and delivery teams, or competing priorities.",
@@ -465,7 +465,7 @@ const personalStyles = {
   E: {
     name: "The Skeptic",
     shortName: "Skeptic",
-    image: "images/the-skeptic.png?v=2",
+    image: "images/the-skeptic.webp?v=1",
     imageAlt: "Illustration representing The Skeptic",
     focus: "You focus on validation.",
     description: "You question assumptions, test claims, and look for hidden costs or overlooked risks. Your instinct is not to block change, but to ensure it rests on solid reasoning.",
@@ -475,7 +475,7 @@ const personalStyles = {
   F: {
     name: "The Explorer",
     shortName: "Explorer",
-    image: "images/the-explorer.png?v=2",
+    image: "images/the-explorer.webp?v=1",
     imageAlt: "Illustration representing The Explorer",
     focus: "You focus on discovery.",
     description: "You are drawn to what is new and possible. When technology changes, you want to experiment, learn by doing, and see what emerges. You are comfortable moving without a map.",
@@ -488,7 +488,7 @@ const companyStyles = {
   A: {
     name: "The Freight Train",
     shortName: "Freight Train",
-    image: "images/the-freight-train.png?v=2",
+    image: "images/the-freight-train.webp?v=1",
     imageAlt: "Illustration representing The Freight Train",
     focus: "Built for steady, long-term movement.",
     description: "This organization carries significant weight, supports critical systems, and prioritizes reliability over speed. Decisions are deliberate, change is planned well in advance, and momentum builds slowly but powerfully once underway.",
@@ -499,7 +499,7 @@ const companyStyles = {
   B: {
     name: "The Assembly Line",
     shortName: "Assembly Line",
-    image: "images/the-assembly-line.png?v=2",
+    image: "images/the-assembly-line.webp?v=1",
     imageAlt: "Illustration representing The Assembly Line",
     focus: "Built for efficiency and repeatability.",
     description: "This organization focuses on throughput, cost control, and optimization. Technology is adopted when it improves existing workflows or measurably increases output. Everything is instrumented, measured, and refined.",
@@ -510,7 +510,7 @@ const companyStyles = {
   C: {
     name: "The Off-Road Vehicle",
     shortName: "Off-Road Vehicle",
-    image: "images/the-off-road-vehicle.png?v=2",
+    image: "images/the-off-road-vehicle.webp?v=1",
     imageAlt: "Illustration representing The Off-Road Vehicle",
     focus: "Built for uncertain terrain.",
     description: "This organization values flexibility, experimentation, and learning by doing. Teams are encouraged to explore, test assumptions, and move quickly when opportunities appear.",
@@ -521,7 +521,7 @@ const companyStyles = {
   D: {
     name: "The Control Tower",
     shortName: "Control Tower",
-    image: "images/the-control-tower.png?v=2",
+    image: "images/the-control-tower.webp?v=1",
     imageAlt: "Illustration representing The Control Tower",
     focus: "Built for coordination and risk management.",
     description: "This organization operates in complex environments with many stakeholders, regulatory constraints, or high consequences for failure. Visibility, oversight, and consistency matter more than speed.",
@@ -532,7 +532,7 @@ const companyStyles = {
   E: {
     name: "The Shape-Shifter",
     shortName: "Shape-Shifter",
-    image: "images/the-shape-shifter.png?v=2",
+    image: "images/the-shape-shifter.webp?v=1",
     imageAlt: "Illustration representing The Shape-Shifter",
     focus: "Built to adapt to external signals.",
     description: "This organization reconfigures strategy, structure, and priorities frequently in response to market conditions, leadership changes, or competitive pressure. Narrative alignment matters as much as execution.",
