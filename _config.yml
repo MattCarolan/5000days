@@ -1,0 +1,3 @@
+# Publish the Android App Links verification file in its required dot-prefixed folder.
+include:
+  - .well-known/assetlinks.json
