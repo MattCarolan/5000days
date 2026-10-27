@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "net.fivethousanddays.adapt",
+      "sha256_cert_fingerprints": [
+        "3C:A3:30:DE:8C:BD:3B:86:FD:F4:CB:DC:DE:EC:F3:E1:C9:AB:FB:8D:CA:73:F7:73:37:A2:22:95:12:ED:B0:42"
+      ]
+    }
+  }
+]
